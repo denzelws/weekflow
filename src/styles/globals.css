@@ -1,0 +1,393 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   WeekFlow · Global Styles
+   Design System: "The Digital Sanctuary"
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── 1. CSS Custom Properties (Design Tokens) ───────────────────────────────── */
+:root {
+  /* Surfaces */
+  --surface:          #060d24;
+  --surface-low:      #0a122b;
+  --surface-mid:      #101828;
+  --surface-high:     #151e3c;
+  --surface-highest:  #1a2445;
+
+  /* Brand */
+  --primary:          #3afea0;
+  --primary-dark:     #11ec90;
+  --primary-muted:    #1a4d38;
+  --secondary:        #ff6b6b;
+  --gold:             #f5c842;
+  --success:          #22c55e;
+
+  /* Text */
+  --on-surface:       #ffffff;
+  --on-muted:         #8892aa;
+  --on-primary:       #060d24;
+
+  /* Radius */
+  --radius-sm:        0.5rem;
+  --radius-md:        1rem;
+  --radius-lg:        1.5rem;
+  --radius-xl:        2rem;
+
+  /* Shadows */
+  --shadow-float:     0 20px 40px rgba(6, 13, 36, 0.4);
+  --shadow-glow:      0 0 0 4px rgba(58, 254, 160, 0.15);
+  --shadow-card:      0 4px 24px rgba(6, 13, 36, 0.3);
+
+  /* Transitions */
+  --ease-spring:      cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out:         cubic-bezier(0.0, 0, 0.2, 1);
+  --duration-fast:    150ms;
+  --duration-base:    300ms;
+  --duration-slow:    500ms;
+}
+
+/* ── 2. Base Reset & Typography ─────────────────────────────────────────────── */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-weight: 400;
+    background-color: var(--surface);
+    color: var(--on-surface);
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* Headings use display font */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: rgba(58, 254, 160, 0.25);
+    color: #ffffff;
+  }
+
+  /* Focus visible — mint ring, no outline */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--surface-low);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--surface-highest);
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-muted);
+  }
+}
+
+/* ── 3. Typography Scale (Component Layer) ──────────────────────────────────── */
+@layer components {
+
+  /* Display — large editorial titles */
+  .text-display {
+    @apply font-display text-5xl font-extrabold tracking-tight leading-none;
+  }
+
+  /* Headings */
+  .text-h1 { @apply font-display text-4xl font-bold tracking-tight; }
+  .text-h2 { @apply font-display text-3xl font-bold tracking-tight; }
+  .text-h3 { @apply font-display text-2xl font-bold; }
+  .text-h4 { @apply font-display text-xl font-bold; }
+
+  /* Body */
+  .text-body-lg { @apply font-body text-lg leading-relaxed; }
+  .text-body    { @apply font-body text-base leading-relaxed; }
+  .text-body-sm { @apply font-body text-sm leading-relaxed; }
+
+  /* Label — all caps, spaced */
+  .text-label {
+    @apply font-body text-2xs font-semibold uppercase tracking-label text-on-muted;
+  }
+
+  /* Muted helper */
+  .text-muted { @apply text-on-muted; }
+
+  /* ── 4. Surface Cards ─────────────────────────────────────────────── */
+
+  .card {
+    @apply bg-surface-high rounded-xl p-6 shadow-card;
+  }
+
+  .card-low {
+    @apply bg-surface-low rounded-xl p-6 shadow-card;
+  }
+
+  .card-highest {
+    @apply bg-surface-highest rounded-xl p-6 shadow-card;
+  }
+
+  /* Glass overlay */
+  .glass {
+    background: rgba(26, 36, 69, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* ── 5. Button System ─────────────────────────────────────────────── */
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2
+           font-body font-semibold text-base
+           rounded-pill px-6 py-3.5
+           transition-all duration-300
+           focus-visible:ring-0 focus-visible:outline-none
+           disabled:opacity-40 disabled:cursor-not-allowed
+           select-none cursor-pointer;
+  }
+
+  /* Primary — gradient mint */
+  .btn-primary {
+    @apply btn
+           bg-primary-gradient text-on-primary
+           shadow-glow-lg
+           hover:brightness-110 hover:scale-[1.02] hover:shadow-glow
+           active:scale-[0.98];
+  }
+
+  /* Secondary — ghost */
+  .btn-secondary {
+    @apply btn
+           bg-transparent text-primary border border-primary-muted
+           hover:bg-primary-muted hover:border-transparent
+           active:scale-[0.98];
+  }
+
+  /* Ghost — no border */
+  .btn-ghost {
+    @apply btn
+           bg-transparent text-on-muted
+           hover:text-on-surface hover:bg-surface-high
+           active:scale-[0.98];
+  }
+
+  /* Danger */
+  .btn-danger {
+    @apply btn
+           bg-secondary text-white
+           hover:brightness-110 hover:scale-[1.02]
+           active:scale-[0.98];
+  }
+
+  /* Icon-only button */
+  .btn-icon {
+    @apply inline-flex items-center justify-center
+           w-10 h-10 rounded-full
+           bg-surface-high text-on-muted
+           transition-all duration-200
+           hover:text-on-surface hover:bg-surface-highest
+           active:scale-90
+           focus-visible:ring-0 focus-visible:outline-none;
+  }
+
+  /* ── 6. Input System ──────────────────────────────────────────────── */
+
+  .input {
+    @apply w-full
+           bg-surface-low text-on-surface placeholder-on-muted
+           rounded-lg px-4 py-3
+           font-body text-base
+           border-0 outline-none
+           transition-all duration-300
+           focus:bg-surface-highest focus:shadow-glow;
+  }
+
+  .textarea {
+    @apply input resize-none;
+    min-height: 160px;
+    field-sizing: content;
+  }
+
+  /* ── 7. Badge / Tag ───────────────────────────────────────────────── */
+
+  .badge {
+    @apply inline-flex items-center gap-1
+           px-2.5 py-0.5 rounded-pill
+           font-body text-2xs font-semibold uppercase tracking-label;
+  }
+
+  .badge-primary  { @apply badge bg-primary-muted text-primary; }
+  .badge-secondary{ @apply badge bg-secondary/20 text-secondary; }
+  .badge-gold     { @apply badge bg-gold/20 text-gold; }
+  .badge-muted    { @apply badge bg-surface-highest text-on-muted; }
+
+  /* ── 8. Progress Bar ──────────────────────────────────────────────── */
+
+  .progress-track {
+    @apply w-full h-1.5 bg-surface-highest rounded-pill overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full bg-primary-gradient rounded-pill
+           transition-all duration-700 ease-out;
+  }
+
+  /* ── 9. Divider (tonal, no border) ───────────────────────────────── */
+
+  .divider {
+    @apply w-full h-px bg-surface-highest my-4;
+  }
+
+  /* ── 10. Streak bar item ──────────────────────────────────────────── */
+
+  .streak-bar {
+    @apply w-1.5 rounded-pill transition-all duration-500;
+  }
+  .streak-bar.active  { @apply bg-primary h-5; }
+  .streak-bar.done    { @apply bg-primary/60 h-4; }
+  .streak-bar.empty   { @apply bg-surface-highest h-3; }
+
+  /* ── 11. Nav Item ─────────────────────────────────────────────────── */
+
+  .nav-item {
+    @apply flex flex-col items-center gap-1 px-3 py-2
+           text-on-muted text-2xs font-semibold uppercase tracking-label
+           transition-all duration-200
+           hover:text-on-surface
+           cursor-pointer;
+  }
+  .nav-item.active { @apply text-primary; }
+
+  /* ── 12. Task card states ─────────────────────────────────────────── */
+
+  .task-card {
+    @apply card-low flex items-start gap-3 cursor-pointer
+           transition-all duration-300
+           hover:bg-surface-high;
+  }
+
+  .task-card.selected {
+    @apply bg-primary-muted border border-primary/30;
+  }
+
+  .task-card.completed {
+    @apply opacity-40 cursor-default;
+  }
+
+  .task-card.focus-active {
+    @apply animate-pulse-scale shadow-glow;
+  }
+
+  /* ── 13. Checkbox ─────────────────────────────────────────────────── */
+
+  .checkbox {
+    @apply flex-shrink-0 w-5 h-5 rounded-full
+           border-2 border-surface-highest
+           flex items-center justify-center
+           transition-all duration-300;
+  }
+  .checkbox.checked {
+    @apply bg-primary border-primary;
+  }
+  .checkbox.selected {
+    @apply border-primary;
+  }
+
+  /* ── 14. XP Pop animation helper ─────────────────────────────────── */
+  .xp-pop {
+    @apply absolute pointer-events-none font-display font-bold text-primary
+           animate-xp-pop;
+  }
+
+  /* ── 15. Screen container ─────────────────────────────────────────── */
+  .screen {
+    @apply min-h-dvh flex flex-col
+           bg-surface
+           px-6 pt-16 pb-10;
+  }
+
+  .screen-centered {
+    @apply screen items-center justify-center text-center;
+  }
+
+  /* ── 16. Section label ────────────────────────────────────────────── */
+  .section-label {
+    @apply text-label mb-3;
+  }
+}
+
+/* ── 17. Utility Layer Extras ───────────────────────────────────────────────── */
+@layer utilities {
+
+  /* Stagger animation delays */
+  .delay-0   { animation-delay: 0ms; }
+  .delay-50  { animation-delay: 50ms; }
+  .delay-100 { animation-delay: 100ms; }
+  .delay-150 { animation-delay: 150ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+  .delay-600 { animation-delay: 600ms; }
+  .delay-700 { animation-delay: 700ms; }
+
+  /* Opacity animation — start hidden */
+  .anim-hidden { opacity: 0; }
+
+  /* Safe area padding (mobile) */
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 1.25rem); }
+  .pt-safe { padding-top:    env(safe-area-inset-top, 0); }
+
+  /* Gradient text */
+  .text-gradient {
+    background: linear-gradient(135deg, #3afea0, #11ec90);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Shimmer skeleton */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--surface-high) 0%,
+      rgba(58, 254, 160, 0.08) 50%,
+      var(--surface-high) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s linear infinite;
+  }
+
+  /* No scrollbar */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Mint left border accent */
+  .border-l-mint { border-left: 3px solid var(--primary); }
+}
