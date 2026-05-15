@@ -5,20 +5,21 @@ import {
   FocusMode,
   DaySummary,
 } from "@/components/screens";
-import { useAppStore } from "@/store/useAppStore";
+
+import { ScreenTransition } from "@/components/layout";
+import { useApp } from "./store/AppContext";
 
 export default function App() {
-  const store = useAppStore();
-
+  const store = useApp();
   const { screen } = store.state;
 
   return (
-    <>
-      {screen === "brain-dump" && <BrainDump store={store} />}
-      {screen === "week-kickoff" && <WeekKickoff store={store} />}
-      {screen === "backlog" && <BacklogView store={store} />}
-      {screen === "focus" && <FocusMode store={store} />}
-      {screen === "day-summary" && <DaySummary store={store} />}
-    </>
+    <ScreenTransition screen={screen}>
+      {screen === "brain-dump" && <BrainDump />}
+      {screen === "week-kickoff" && <WeekKickoff />}
+      {screen === "backlog" && <BacklogView />}
+      {screen === "focus" && <FocusMode />}
+      {screen === "day-summary" && <DaySummary />}
+    </ScreenTransition>
   );
 }
