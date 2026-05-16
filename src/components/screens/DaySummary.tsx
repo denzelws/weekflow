@@ -42,7 +42,7 @@ export function DaySummary() {
         >
           {isPerfectDay ? (
             <Badge variant="primary" className="mb-4">
-              Perfect Day 🔥
+              Dia perfeito 🔥
             </Badge>
           ) : (
             <Badge variant="muted" className="mb-4">
@@ -52,7 +52,7 @@ export function DaySummary() {
           <h1 className="text-h1 mb-2">
             {isPerfectDay ? (
               <>
-                Great focus,
+                Ótimo foco,
                 <br />
                 <span className="text-gradient">{profile.name}!</span>
               </>
@@ -80,7 +80,7 @@ export function DaySummary() {
           style={{ animationFillMode: "forwards" }}
         >
           <div className="card-low flex flex-col gap-3">
-            <span className="text-label">Weekly Streak</span>
+            <span className="text-label">Sequência semanal</span>
             <p className="font-display text-3xl font-bold text-on-surface">
               {profile.currentStreak}
               <span className="text-on-muted text-xl font-normal">/7 Dias</span>
@@ -89,7 +89,7 @@ export function DaySummary() {
           </div>
 
           <div className="card-low flex flex-col gap-3">
-            <span className="text-label">XP Earned</span>
+            <span className="text-label">XP ganho</span>
             <p className="font-display text-3xl font-bold text-primary">
               +{xpEarned}
             </p>
@@ -97,7 +97,7 @@ export function DaySummary() {
           </div>
 
           <div className="card-low flex flex-col gap-2">
-            <span className="text-label">Tasks Done</span>
+            <span className="text-label">Tarefas concluídas</span>
             <div className="flex items-end gap-1">
               <span className="font-display text-3xl font-bold text-on-surface">
                 {completedCount}
@@ -108,7 +108,7 @@ export function DaySummary() {
           </div>
 
           <div className="card-low flex flex-col gap-2">
-            <span className="text-label">Level Up</span>
+            <span className="text-label">Progresso de nível</span>
             <p className="font-display text-3xl font-bold text-gradient">
               LVL {profile.level}
             </p>
@@ -153,7 +153,7 @@ export function DaySummary() {
           style={{ animationFillMode: "forwards" }}
         >
           <Button fullWidth size="lg" loading={closing} onClick={handleClose}>
-            Close for Today
+            Fechar dia
           </Button>
 
           <Button variant="ghost" fullWidth onClick={store.resetForNewWeek}>

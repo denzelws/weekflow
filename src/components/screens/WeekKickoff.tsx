@@ -21,7 +21,7 @@ export function WeekKickoff() {
         style={{ animationFillMode: "forwards" }}
       >
         <Badge variant="primary" className="mb-4">
-          Quest Aceita ⚡
+          Quest aceita ⚡
         </Badge>
         <h1 className="text-h1 mb-2">
           Sua semana
@@ -105,7 +105,7 @@ export function WeekKickoff() {
           onClick={store.startWeek}
           iconRight={<span>🚀</span>}
         >
-          Start the Week
+          Começar semana
         </Button>
         <p className="text-center text-label mt-3">
           Comprometimento é o primeiro passo.

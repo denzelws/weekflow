@@ -39,12 +39,15 @@ export function BrainDump() {
           style={{ animationFillMode: "forwards" }}
         >
           <h1 className="text-h1 mb-3 leading-tight">
-            What's your
+            Sobre o que é
             <br />
-            <span className="text-gradient">week about?</span>
+            <span className="text-gradient">sua semana?</span>
           </h1>
           <p className="text-body text-muted">
             Jogue tudo aqui. Sem filtro necessário.
+          </p>
+          <p className="text-body-sm text-muted mt-3">
+            Escolha 3. Foque em 1. Termine. Só depois avance.
           </p>
         </div>
 
@@ -95,7 +98,7 @@ export function BrainDump() {
           onClick={() => store.buildWeek(text)}
           iconRight={<span className="text-lg">→</span>}
         >
-          Build my week
+          Montar minha semana
         </Button>
       </div>
     </div>

@@ -54,10 +54,10 @@ export function BacklogView() {
         {!selectionLocked ? (
           <p className="text-body-sm text-muted">
             {selectedCount === 0
-              ? "Escolha 3 tarefas para hoje."
+              ? "Escolha 3 tarefas para focar hoje."
               : selectedCount < 3
                 ? `Mais ${3 - selectedCount} para selecionar.`
-                : "Pronto! Bora focar?"}
+                : "Pronto. Agora foque em uma tarefa por vez."}
           </p>
         ) : (
           <p className="text-body-sm text-muted">
@@ -73,7 +73,7 @@ export function BacklogView() {
             onClick={store.startFocus}
             iconRight={<span>→</span>}
           >
-            Let's Focus
+            Começar foco
           </Button>
         </div>
       )}
@@ -85,7 +85,7 @@ export function BacklogView() {
             onClick={store.startFocus}
             iconRight={<span>⚡</span>}
           >
-            Continuar Foco
+            Continuar foco
           </Button>
         </div>
       )}

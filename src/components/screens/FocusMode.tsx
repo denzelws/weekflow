@@ -100,9 +100,8 @@ export function FocusMode() {
             </div>
           )}
 
-          {/* CURRENT FOCUS label */}
           <span className="text-label text-primary tracking-widest">
-            CURRENT FOCUS
+            FOCO ATUAL
           </span>
 
           {/* Task title */}
@@ -128,8 +127,8 @@ export function FocusMode() {
             </button>
             <span className="text-label">
               {timerActive
-                ? "Tocando — clique para pausar"
-                : "Clique para iniciar timer"}
+                ? "Timer ativo — clique para pausar"
+                : "Clique para iniciar o timer"}
             </span>
           </div>
 
@@ -141,7 +140,7 @@ export function FocusMode() {
             onClick={handleDone}
             iconRight={<span>✓</span>}
           >
-            Done
+            Concluir tarefa
           </Button>
         </div>
 
@@ -156,7 +155,9 @@ export function FocusMode() {
                 "transition-all duration-300 hover:bg-surface-highest",
               )}
             >
-              {remaining.length} more today
+              {remaining.length === 1
+                ? "1 tarefa restante hoje"
+                : `${remaining.length} tarefas restantes hoje`}
               <span
                 className={cn(
                   "transition-transform duration-200",

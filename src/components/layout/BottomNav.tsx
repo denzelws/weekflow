@@ -11,7 +11,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'backlog',     icon: '▦',  label: 'Backlog' },
   { id: 'backlog',     icon: '☰',  label: 'Hoje'    },
   { id: 'focus',       icon: '⚡', label: 'Foco'    },
-  { id: 'day-summary', icon: '◉',  label: 'Stats'   },
+  { id: 'day-summary', icon: '◉',  label: 'Resumo'  },
 ]
 
 interface BottomNavProps {
