@@ -10,9 +10,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useStreakGuard({
     profile: store.state.profile,
     lastSession: store.state.todaySession,
-    onStreakReset: (updated) => {
-      store.state.profile.currentStreak = updated.currentStreak;
-    },
+    onStreakReset: store.resetCurrentStreak,
   });
 
   return <AppContext.Provider value={store}>{children}</AppContext.Provider>;

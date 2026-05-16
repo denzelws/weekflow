@@ -14,46 +14,104 @@ import {
 import { storage } from "@/utils/storage";
 
 const initState = (): AppState => {
-  const week = storage.getWeek();
-  const tasks = storage.getTasks();
-  const session = storage.getSession();
-  const profile = storage.getProfile() ?? createProfile();
+  const savedState = storage.getState();
 
-  let screen: AppScreen = "brain-dump";
-  if (week) {
-    if (
-      session &&
-      !session.closedAt &&
-      session.completedCount < session.selectedTasks.length
-    ) {
-      screen = "focus";
-    } else if (session && session.closedAt) {
-      screen = "backlog";
-    } else if (session && session.selectedTasks.length === 3) {
-      screen = "focus";
-    } else {
-      screen = "backlog";
-    }
+  if (savedState) {
+    return normalizeState(savedState);
   }
 
-  return {
-    screen,
-    currentWeek: week,
-    tasks,
-    todaySession: session,
-    profile,
+  return normalizeState({
+    screen: "brain-dump",
+    currentWeek: null,
+    tasks: [],
+    todaySession: null,
+    profile: createProfile(),
     activeFocusIdx: 0,
+  });
+};
+
+const normalizeState = (state: AppState): AppState => {
+  const currentWeek = state.currentWeek;
+  const tasks = currentWeek
+    ? state.tasks.filter((task) => task.weekId === currentWeek.id)
+    : [];
+  const taskIds = new Set(tasks.map((task) => task.id));
+  const session =
+    currentWeek &&
+    state.todaySession &&
+    state.todaySession.weekId === currentWeek.id
+      ? {
+          ...state.todaySession,
+          selectedTasks: state.todaySession.selectedTasks.filter((taskId) =>
+            taskIds.has(taskId),
+          ),
+        }
+      : null;
+
+  const completedCount = session
+    ? Math.max(
+        0,
+        Math.min(session.completedCount, session.selectedTasks.length),
+      )
+    : 0;
+  const todaySession = session ? { ...session, completedCount } : null;
+  const activeFocusIdx = todaySession
+    ? Math.max(
+        0,
+        Math.min(state.activeFocusIdx, todaySession.selectedTasks.length - 1),
+      )
+    : 0;
+
+  const normalized: AppState = {
+    ...state,
+    currentWeek,
+    tasks,
+    todaySession,
+    activeFocusIdx,
   };
+
+  return {
+    ...normalized,
+    screen: resolveScreen(normalized),
+  };
+};
+
+const resolveScreen = (state: AppState): AppScreen => {
+  if (!state.currentWeek) return "brain-dump";
+
+  const selectedCount = state.todaySession?.selectedTasks.length ?? 0;
+  const completedCount = state.todaySession?.completedCount ?? 0;
+  const canFocus =
+    !!state.todaySession &&
+    !state.todaySession.closedAt &&
+    selectedCount > 0 &&
+    completedCount < selectedCount;
+  const canSummarize =
+    !!state.todaySession &&
+    !state.todaySession.closedAt &&
+    selectedCount > 0 &&
+    completedCount >= selectedCount;
+
+  switch (state.screen) {
+    case "brain-dump":
+      return "backlog";
+    case "week-kickoff":
+      return state.tasks.length > 0 ? "week-kickoff" : "backlog";
+    case "focus":
+      return canFocus ? "focus" : canSummarize ? "day-summary" : "backlog";
+    case "day-summary":
+      return canSummarize ? "day-summary" : "backlog";
+    case "backlog":
+    default:
+      return "backlog";
+  }
 };
 
 export function useAppStore() {
   const [state, setState] = useState<AppState>(initState);
 
   useEffect(() => {
-    if (state.currentWeek) storage.saveWeek(state.currentWeek);
-    storage.saveTasks(state.tasks);
-    if (state.todaySession) storage.saveSession(state.todaySession);
-    storage.saveProfile(state.profile);
+    storage.saveState(state);
   }, [state]);
 
   const buildWeek = useCallback((rawText: string) => {
@@ -207,6 +265,16 @@ export function useAppStore() {
     }));
   }, []);
 
+  const resetCurrentStreak = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      profile: {
+        ...s.profile,
+        currentStreak: 0,
+      },
+    }));
+  }, []);
+
   const resetForNewWeek = useCallback(() => {
     storage.resetWeek();
     setState((s) => ({
@@ -238,6 +306,7 @@ export function useAppStore() {
     completeTask,
     closeDay,
     carryOver,
+    resetCurrentStreak,
     resetForNewWeek,
     // Selectors
     todayTasks,

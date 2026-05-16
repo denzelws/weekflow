@@ -5,7 +5,7 @@ import type { UserProfile, DaySession } from "@/types";
 interface UseStreakOptions {
   profile: UserProfile;
   lastSession: DaySession | null;
-  onStreakReset: (updatedProfile: UserProfile) => void;
+  onStreakReset: () => void;
 }
 
 export function useStreakGuard({
@@ -25,7 +25,7 @@ export function useStreakGuard({
     const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffDays > 1 && profile.currentStreak > 0) {
-      onStreakReset({ ...profile, currentStreak: 0 });
+      onStreakReset();
     }
-  }, []);
+  }, [lastSession, onStreakReset, profile.currentStreak]);
 }

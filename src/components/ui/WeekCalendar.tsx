@@ -1,4 +1,4 @@
-import { cn, getWeekStart, getWeekDays, shortDayLabel, today } from "@/utils";
+import { cn, getWeekDays, shortDayLabel, today } from "@/utils";
 import type { Week, Task } from "@/types";
 
 interface WeekCalendarProps {
@@ -16,7 +16,6 @@ export function WeekCalendar({ week, tasks, className }: WeekCalendarProps) {
     <div className={cn("flex gap-1.5 justify-between", className)}>
       {days.map((day) => {
         const isToday = day === todayStr;
-        const isPast = day < todayStr;
         const dayTasks = tasks.filter((t) => t.dayAssigned === day);
         const completed = dayTasks.filter(
           (t) => t.status === "completed",
