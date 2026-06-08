@@ -2,6 +2,12 @@ export type TaskStatus = "pending" | "today" | "completed" | "carried_over";
 
 export type WeekStatus = "active" | "completed" | "abandoned";
 
+export type ObligationStatus =
+  | "backlog"
+  | "scheduled"
+  | "completed"
+  | "discarded";
+
 export type AppScreen =
   | "brain-dump" // Tela 1 — Input semana
   | "week-kickoff" // Tela 2 — Reveal das tarefas
@@ -12,12 +18,23 @@ export type AppScreen =
 export interface Task {
   id: string;
   weekId: string;
+  sourceObligationId: string | null;
   title: string;
   status: TaskStatus;
   dayAssigned: string | null;
   completedAt: string | null;
   order: number;
   dayOrder: number | null;
+}
+
+export interface Obligation {
+  id: string;
+  title: string;
+  status: ObligationStatus;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  discardedAt: string | null;
 }
 
 export interface Week {
@@ -56,6 +73,7 @@ export interface AppState {
   screen: AppScreen;
   currentWeek: Week | null;
   tasks: Task[];
+  obligations: Obligation[];
   todaySession: DaySession | null;
   profile: UserProfile;
   activeFocusIdx: number;

@@ -3,7 +3,7 @@
    ─────────────────────────────────────────────────────────────────────────── */
 
 import { v4 as uuidv4 } from 'uuid'
-import type { Task, Week, DaySession, UserProfile } from '@/types'
+import type { Task, Week, DaySession, UserProfile, Obligation } from '@/types'
 
 // ── Date Helpers ──────────────────────────────────────────────────────────────
 
@@ -72,6 +72,7 @@ export const parseTasksFromText = (
     .map((title, idx) => ({
       id:          uuidv4(),
       weekId,
+      sourceObligationId: null,
       title,
       status:      'pending' as const,
       dayAssigned: null,
@@ -145,6 +146,35 @@ export const createProfile = (name = 'Usuário'): UserProfile => ({
   longestStreak:    0,
   totalPerfectDays: 0,
   createdAt:        now(),
+})
+
+export const createObligation = (title: string): Obligation => {
+  const timestamp = now()
+  return {
+    id:           uuidv4(),
+    title,
+    status:       'backlog',
+    createdAt:    timestamp,
+    updatedAt:    timestamp,
+    completedAt:  null,
+    discardedAt:  null,
+  }
+}
+
+export const createTaskFromObligation = (
+  weekId: string,
+  obligation: Obligation,
+  order: number,
+): Task => ({
+  id:                 uuidv4(),
+  weekId,
+  sourceObligationId: obligation.id,
+  title:              obligation.title,
+  status:             'pending',
+  dayAssigned:        null,
+  completedAt:        null,
+  order,
+  dayOrder:           null,
 })
 
 // ── clsx-compatible class merger ──────────────────────────────────────────────

@@ -7,6 +7,8 @@ import {
   createWeek,
   createDaySession,
   createProfile,
+  createObligation,
+  createTaskFromObligation,
   calcDayXP,
   calcLevel,
   calcLevelProgress,
@@ -24,6 +26,7 @@ const initState = (): AppState => {
     screen: "brain-dump",
     currentWeek: null,
     tasks: [],
+    obligations: [],
     todaySession: null,
     profile: createProfile(),
     activeFocusIdx: 0,
@@ -32,9 +35,37 @@ const initState = (): AppState => {
 
 const normalizeState = (state: AppState): AppState => {
   const currentWeek = state.currentWeek;
+  const obligations = state.obligations;
+  const obligationIds = new Set(obligations.map((obligation) => obligation.id));
   const tasks = currentWeek
-    ? state.tasks.filter((task) => task.weekId === currentWeek.id)
+    ? state.tasks
+        .filter((task) => task.weekId === currentWeek.id)
+        .map((task) => ({
+          ...task,
+          sourceObligationId:
+            task.sourceObligationId && obligationIds.has(task.sourceObligationId)
+              ? task.sourceObligationId
+              : null,
+        }))
     : [];
+  const activeLinkedObligationIds = new Set(
+    tasks
+      .filter((task) => task.sourceObligationId && task.status !== "completed")
+      .map((task) => task.sourceObligationId),
+  );
+  const normalizedObligations = obligations.map((obligation) => {
+    if (
+      obligation.status === "scheduled" &&
+      !activeLinkedObligationIds.has(obligation.id)
+    ) {
+      return {
+        ...obligation,
+        status: "backlog" as const,
+      };
+    }
+
+    return obligation;
+  });
   const taskIds = new Set(tasks.map((task) => task.id));
   const session =
     currentWeek &&
@@ -66,6 +97,7 @@ const normalizeState = (state: AppState): AppState => {
     ...state,
     currentWeek,
     tasks,
+    obligations: normalizedObligations,
     todaySession,
     activeFocusIdx,
   };
@@ -184,11 +216,27 @@ export function useAppStore() {
       const activeTaskId = selectedIds[s.activeFocusIdx];
       if (!activeTaskId) return s;
 
+      const completedAt = now();
+      const completedTask = s.tasks.find((t) => t.id === activeTaskId);
+
       const updatedTasks: Task[] = s.tasks.map((t) =>
         t.id === activeTaskId
-          ? { ...t, status: "completed", completedAt: now() }
+          ? { ...t, status: "completed", completedAt }
           : t,
       );
+
+      const updatedObligations = completedTask?.sourceObligationId
+        ? s.obligations.map((obligation) =>
+            obligation.id === completedTask.sourceObligationId
+              ? {
+                  ...obligation,
+                  status: "completed" as const,
+                  completedAt,
+                  updatedAt: completedAt,
+                }
+              : obligation,
+          )
+        : s.obligations;
 
       const newCompleted = s.todaySession.completedCount + 1;
       const isPerfect = newCompleted === 3;
@@ -207,6 +255,7 @@ export function useAppStore() {
       return {
         ...s,
         tasks: updatedTasks,
+        obligations: updatedObligations,
         todaySession: updatedSession,
         screen: isDone ? "day-summary" : "focus",
         activeFocusIdx: isDone ? s.activeFocusIdx : nextIdx,
@@ -265,6 +314,134 @@ export function useAppStore() {
     }));
   }, []);
 
+  const addObligation = useCallback((title: string) => {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) return;
+
+    setState((s) => ({
+      ...s,
+      obligations: [...s.obligations, createObligation(trimmedTitle)],
+    }));
+  }, []);
+
+  const discardObligation = useCallback((obligationId: string) => {
+    const discardedAt = now();
+
+    setState((s) => ({
+      ...s,
+      obligations: s.obligations.map((obligation) =>
+        obligation.id === obligationId && obligation.status === "backlog"
+          ? {
+              ...obligation,
+              status: "discarded",
+              discardedAt,
+              updatedAt: discardedAt,
+            }
+          : obligation,
+      ),
+    }));
+  }, []);
+
+  const addObligationToWeek = useCallback((obligationId: string) => {
+    setState((s) => {
+      if (!s.currentWeek) return s;
+
+      const obligation = s.obligations.find((item) => item.id === obligationId);
+      if (!obligation || obligation.status !== "backlog") return s;
+
+      const alreadyScheduled = s.tasks.some(
+        (task) =>
+          task.sourceObligationId === obligationId &&
+          task.status !== "completed",
+      );
+      if (alreadyScheduled) return s;
+
+      const order =
+        s.tasks.length > 0
+          ? Math.max(...s.tasks.map((task) => task.order)) + 1
+          : 0;
+      const task = createTaskFromObligation(s.currentWeek.id, obligation, order);
+      const updatedTasks = [...s.tasks, task];
+      const updatedAt = now();
+
+      return normalizeState({
+        ...s,
+        tasks: updatedTasks,
+        obligations: s.obligations.map((item) =>
+          item.id === obligationId
+            ? {
+                ...item,
+                status: "scheduled",
+                updatedAt,
+              }
+            : item,
+        ),
+        currentWeek: {
+          ...s.currentWeek,
+          totalTasks: updatedTasks.length,
+        },
+      });
+    });
+  }, []);
+
+  const returnTaskToObligations = useCallback((taskId: string) => {
+    setState((s) => {
+      const task = s.tasks.find((item) => item.id === taskId);
+      if (!task?.sourceObligationId || task.status === "completed") return s;
+
+      const updatedTasks = s.tasks.filter((item) => item.id !== taskId);
+      const previousSelectedTasks = s.todaySession?.selectedTasks ?? [];
+      const removedIndex = previousSelectedTasks.indexOf(taskId);
+      const selectedTasks = previousSelectedTasks.filter((id) => id !== taskId);
+      const nextActiveFocusIdx =
+        removedIndex >= 0 && removedIndex < s.activeFocusIdx
+          ? s.activeFocusIdx - 1
+          : s.activeFocusIdx;
+      const completedCount = s.todaySession
+        ? Math.max(
+            0,
+            Math.min(s.todaySession.completedCount, selectedTasks.length),
+          )
+        : 0;
+      const updatedAt = now();
+
+      return normalizeState({
+        ...s,
+        tasks: updatedTasks,
+        todaySession: s.todaySession
+          ? {
+              ...s.todaySession,
+              selectedTasks,
+              completedCount,
+              isPerfectDay: completedCount === 3,
+            }
+          : null,
+        obligations: s.obligations.map((obligation) =>
+          obligation.id === task.sourceObligationId
+            ? {
+                ...obligation,
+                status: "backlog",
+                updatedAt,
+              }
+            : obligation,
+        ),
+        currentWeek: s.currentWeek
+          ? {
+              ...s.currentWeek,
+              totalTasks: updatedTasks.length,
+            }
+          : null,
+        activeFocusIdx:
+          selectedTasks.length > 0
+            ? Math.max(
+                0,
+                Math.min(nextActiveFocusIdx, selectedTasks.length - 1),
+              )
+            : 0,
+      });
+    });
+  }, []);
+
   const resetCurrentStreak = useCallback(() => {
     setState((s) => ({
       ...s,
@@ -277,14 +454,39 @@ export function useAppStore() {
 
   const resetForNewWeek = useCallback(() => {
     storage.resetWeek();
-    setState((s) => ({
-      ...s,
-      screen: "brain-dump",
-      currentWeek: null,
-      tasks: [],
-      todaySession: null,
-      activeFocusIdx: 0,
-    }));
+    setState((s) => {
+      const updatedAt = now();
+
+      return {
+        ...s,
+        screen: "brain-dump",
+        currentWeek: null,
+        tasks: [],
+        obligations: s.obligations.map((obligation) => {
+          const unfinishedLinkedTask = s.tasks.some(
+            (task) =>
+              task.sourceObligationId === obligation.id &&
+              task.status !== "completed",
+          );
+
+          if (
+            !unfinishedLinkedTask ||
+            obligation.status === "completed" ||
+            obligation.status === "discarded"
+          ) {
+            return obligation;
+          }
+
+          return {
+            ...obligation,
+            status: "backlog",
+            updatedAt,
+          };
+        }),
+        todaySession: null,
+        activeFocusIdx: 0,
+      };
+    });
   }, []);
 
   const todayTasks = state.tasks.filter(
@@ -295,6 +497,15 @@ export function useAppStore() {
     .filter(Boolean) as Task[];
   const activeTask = activeTasks?.[state.activeFocusIdx] ?? null;
   const levelProgress = calcLevelProgress(state.profile.totalXP);
+  const backlogObligations = state.obligations.filter(
+    (obligation) => obligation.status === "backlog",
+  );
+  const scheduledObligations = state.obligations.filter(
+    (obligation) => obligation.status === "scheduled",
+  );
+  const completedObligations = state.obligations.filter(
+    (obligation) => obligation.status === "completed",
+  );
 
   return {
     state,
@@ -306,6 +517,10 @@ export function useAppStore() {
     completeTask,
     closeDay,
     carryOver,
+    addObligation,
+    discardObligation,
+    addObligationToWeek,
+    returnTaskToObligations,
     resetCurrentStreak,
     resetForNewWeek,
     // Selectors
@@ -313,6 +528,9 @@ export function useAppStore() {
     activeTasks,
     activeTask,
     levelProgress,
+    backlogObligations,
+    scheduledObligations,
+    completedObligations,
   };
 }
 

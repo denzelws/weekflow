@@ -2,6 +2,8 @@ import type {
   AppScreen,
   AppState,
   DaySession,
+  Obligation,
+  ObligationStatus,
   Task,
   TaskStatus,
   UserProfile,
@@ -9,7 +11,8 @@ import type {
   WeekStatus,
 } from "@/types";
 
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
+const LEGACY_STORAGE_VERSION = 1;
 
 const KEYS = {
   APP_STATE: "wf_app_state",
@@ -20,7 +23,17 @@ const KEYS = {
   HISTORY: "wf_week_history",
 } as const;
 
-interface PersistedAppState {
+type LegacyTask = Omit<Task, "sourceObligationId">;
+type LegacyAppState = Omit<AppState, "tasks" | "obligations"> & {
+  tasks: LegacyTask[];
+};
+
+interface PersistedAppStateV1 {
+  version: typeof LEGACY_STORAGE_VERSION;
+  state: LegacyAppState;
+}
+
+interface PersistedAppStateV2 {
   version: typeof STORAGE_VERSION;
   state: AppState;
 }
@@ -41,6 +54,13 @@ const TASK_STATUSES: TaskStatus[] = [
 ];
 
 const WEEK_STATUSES: WeekStatus[] = ["active", "completed", "abandoned"];
+
+const OBLIGATION_STATUSES: ObligationStatus[] = [
+  "backlog",
+  "scheduled",
+  "completed",
+  "discarded",
+];
 
 const getLocalStorage = (): Storage | null => {
   try {
@@ -75,22 +95,27 @@ const isTaskStatus = (value: unknown): value is TaskStatus =>
 const isWeekStatus = (value: unknown): value is WeekStatus =>
   isString(value) && WEEK_STATUSES.includes(value as WeekStatus);
 
+const isObligationStatus = (value: unknown): value is ObligationStatus =>
+  isString(value) && OBLIGATION_STATUSES.includes(value as ObligationStatus);
+
 const isAppScreen = (value: unknown): value is AppScreen =>
   isString(value) && APP_SCREENS.includes(value as AppScreen);
 
-const readJson = <T>(key: string, validate: (value: unknown) => value is T) => {
+const readStoredValue = (key: string): unknown | null => {
   const localStorage = getLocalStorage();
   if (!localStorage) return null;
 
   try {
     const raw = localStorage.getItem(key);
-    if (!raw) return null;
-
-    const parsed: unknown = JSON.parse(raw);
-    return validate(parsed) ? parsed : null;
+    return raw ? (JSON.parse(raw) as unknown) : null;
   } catch {
     return null;
   }
+};
+
+const readJson = <T>(key: string, validate: (value: unknown) => value is T) => {
+  const parsed = readStoredValue(key);
+  return validate(parsed) ? parsed : null;
 };
 
 const writeJson = <T>(key: string, value: T): void => {
@@ -115,7 +140,7 @@ const remove = (key: string): void => {
   }
 };
 
-const isTask = (value: unknown): value is Task => {
+const isLegacyTask = (value: unknown): value is LegacyTask => {
   if (!isRecord(value)) return false;
 
   return (
@@ -128,6 +153,13 @@ const isTask = (value: unknown): value is Task => {
     isNumber(value.order) &&
     (value.dayOrder === null || isNumber(value.dayOrder))
   );
+};
+
+const isTask = (value: unknown): value is Task => {
+  if (!isRecord(value) || !isLegacyTask(value)) return false;
+
+  const task = value as LegacyTask & { sourceObligationId?: unknown };
+  return isNullableString(task.sourceObligationId);
 };
 
 const isWeek = (value: unknown): value is Week => {
@@ -174,6 +206,34 @@ const isUserProfile = (value: unknown): value is UserProfile => {
   );
 };
 
+const isObligation = (value: unknown): value is Obligation => {
+  if (!isRecord(value)) return false;
+
+  return (
+    isString(value.id) &&
+    isString(value.title) &&
+    isObligationStatus(value.status) &&
+    isString(value.createdAt) &&
+    isString(value.updatedAt) &&
+    isNullableString(value.completedAt) &&
+    isNullableString(value.discardedAt)
+  );
+};
+
+const isLegacyAppState = (value: unknown): value is LegacyAppState => {
+  if (!isRecord(value)) return false;
+
+  return (
+    isAppScreen(value.screen) &&
+    (value.currentWeek === null || isWeek(value.currentWeek)) &&
+    Array.isArray(value.tasks) &&
+    value.tasks.every(isLegacyTask) &&
+    (value.todaySession === null || isDaySession(value.todaySession)) &&
+    isUserProfile(value.profile) &&
+    isNumber(value.activeFocusIdx)
+  );
+};
+
 const isAppState = (value: unknown): value is AppState => {
   if (!isRecord(value)) return false;
 
@@ -182,23 +242,67 @@ const isAppState = (value: unknown): value is AppState => {
     (value.currentWeek === null || isWeek(value.currentWeek)) &&
     Array.isArray(value.tasks) &&
     value.tasks.every(isTask) &&
+    Array.isArray(value.obligations) &&
+    value.obligations.every(isObligation) &&
     (value.todaySession === null || isDaySession(value.todaySession)) &&
     isUserProfile(value.profile) &&
     isNumber(value.activeFocusIdx)
   );
 };
 
-const isPersistedAppState = (value: unknown): value is PersistedAppState => {
+const isPersistedAppStateV1 = (
+  value: unknown,
+): value is PersistedAppStateV1 => {
+  if (!isRecord(value)) return false;
+
+  return value.version === LEGACY_STORAGE_VERSION && isLegacyAppState(value.state);
+};
+
+const isPersistedAppStateV2 = (
+  value: unknown,
+): value is PersistedAppStateV2 => {
   if (!isRecord(value)) return false;
 
   return value.version === STORAGE_VERSION && isAppState(value.state);
 };
 
+const migrateV1State = (state: LegacyAppState): AppState => ({
+  ...state,
+  tasks: state.tasks.map((task) => ({
+    ...task,
+    sourceObligationId: null,
+  })),
+  obligations: [],
+});
+
+const legacyTask = (value: unknown): Task | null => {
+  if (isTask(value)) return value;
+  if (isLegacyTask(value)) {
+    return {
+      ...value,
+      sourceObligationId: null,
+    };
+  }
+  return null;
+};
+
+const isLegacyTaskArray = (value: unknown): value is Array<Task | LegacyTask> => {
+  if (!Array.isArray(value)) return false;
+
+  return value.every((item) => legacyTask(item) !== null);
+};
+
+const migrateLegacyTasks = (value: unknown): Task[] | null => {
+  if (!isLegacyTaskArray(value)) return null;
+
+  return value.map((item) => legacyTask(item)).filter((item): item is Task =>
+    item !== null,
+  );
+};
+
 const legacyState = (): Partial<AppState> | null => {
   const currentWeek = readJson(KEYS.WEEK, isWeek);
-  const tasks = readJson(KEYS.TASKS, (value): value is Task[] => {
-    return Array.isArray(value) && value.every(isTask);
-  });
+  const tasks = migrateLegacyTasks(readStoredValue(KEYS.TASKS));
   const todaySession = readJson(KEYS.SESSION, isDaySession);
   const profile = readJson(KEYS.PROFILE, isUserProfile);
 
@@ -207,6 +311,7 @@ const legacyState = (): Partial<AppState> | null => {
   return {
     currentWeek,
     tasks: tasks ?? [],
+    obligations: [],
     todaySession,
     profile: profile ?? undefined,
   };
@@ -214,8 +319,10 @@ const legacyState = (): Partial<AppState> | null => {
 
 export const storage = {
   getState: (): AppState | null => {
-    const persisted = readJson(KEYS.APP_STATE, isPersistedAppState);
-    if (persisted) return persisted.state;
+    const persisted = readStoredValue(KEYS.APP_STATE);
+
+    if (isPersistedAppStateV2(persisted)) return persisted.state;
+    if (isPersistedAppStateV1(persisted)) return migrateV1State(persisted.state);
 
     const legacy = legacyState();
     if (!legacy || !legacy.profile) return null;
@@ -224,6 +331,7 @@ export const storage = {
       screen: "brain-dump",
       currentWeek: legacy.currentWeek ?? null,
       tasks: legacy.tasks ?? [],
+      obligations: legacy.obligations ?? [],
       todaySession: legacy.todaySession ?? null,
       profile: legacy.profile,
       activeFocusIdx: 0,
@@ -231,7 +339,7 @@ export const storage = {
   },
 
   saveState: (state: AppState): void => {
-    writeJson<PersistedAppState>(KEYS.APP_STATE, {
+    writeJson<PersistedAppStateV2>(KEYS.APP_STATE, {
       version: STORAGE_VERSION,
       state,
     });
