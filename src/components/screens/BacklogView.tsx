@@ -125,7 +125,7 @@ export function BacklogView() {
         </>
       )}
 
-      <BottomNav current={state.screen} onNavigate={() => {}} />
+      <BottomNav current={state.screen} onNavigate={store.navigateTo} />
     </AppShell>
   );
 }

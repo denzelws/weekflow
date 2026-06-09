@@ -2,6 +2,7 @@ import {
   BrainDump,
   WeekKickoff,
   BacklogView,
+  ObligationsBacklog,
   FocusMode,
   DaySummary,
 } from "@/components/screens";
@@ -18,6 +19,7 @@ export default function App() {
       {screen === "brain-dump" && <BrainDump />}
       {screen === "week-kickoff" && <WeekKickoff />}
       {screen === "backlog" && <BacklogView />}
+      {screen === "obligations" && <ObligationsBacklog />}
       {screen === "focus" && <FocusMode />}
       {screen === "day-summary" && <DaySummary />}
     </ScreenTransition>

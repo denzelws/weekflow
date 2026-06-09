@@ -6,6 +6,7 @@ const SLIDE_DIRECTION: Record<AppScreen, string> = {
   "brain-dump": "animate-fade-in",
   "week-kickoff": "animate-slide-up",
   backlog: "animate-slide-up",
+  obligations: "animate-slide-up",
   focus: "animate-slide-in-right",
   "day-summary": "animate-slide-up",
 };

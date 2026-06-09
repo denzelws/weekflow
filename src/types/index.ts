@@ -12,6 +12,7 @@ export type AppScreen =
   | "brain-dump" // Tela 1 — Input semana
   | "week-kickoff" // Tela 2 — Reveal das tarefas
   | "backlog" // Tela 3 — Backlog view + seleção diária
+  | "obligations" // Backlog de obrigações
   | "focus" // Tela 4 — Focus mode
   | "day-summary"; // Tela 5 — Resumo do dia
 

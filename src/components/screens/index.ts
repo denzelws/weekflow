@@ -1,5 +1,6 @@
 export { BrainDump }    from './BrainDump'
 export { WeekKickoff }  from './WeekKickoff'
 export { BacklogView }  from './BacklogView'
+export { ObligationsBacklog } from './ObligationsBacklog'
 export { FocusMode }    from './FocusMode'
 export { DaySummary }   from './DaySummary'

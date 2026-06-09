@@ -9,7 +9,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'backlog',     icon: '▦',  label: 'Backlog' },
-  { id: 'backlog',     icon: '☰',  label: 'Hoje'    },
+  { id: 'obligations', icon: '☰',  label: 'Obrigações' },
   { id: 'focus',       icon: '⚡', label: 'Foco'    },
   { id: 'day-summary', icon: '◉',  label: 'Resumo'  },
 ]

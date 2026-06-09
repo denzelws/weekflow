@@ -56,19 +56,26 @@ export const getWeekDays = (start: Date): string[] =>
 // ── Task Parsing (RN-02) ──────────────────────────────────────────────────────
 
 /**
- * Parse free-form brain-dump text into Task objects.
+ * Parse free-form brain-dump text into task titles.
  * Splits by comma, newline, or semicolon.
  * Ignores fragments with < 3 characters.
  */
-export const parseTasksFromText = (
-  rawText: string,
-  weekId: string,
-): Task[] => {
+export const parseTaskTitles = (rawText: string): string[] => {
   return rawText
     .split(/[,\n;]+/)
     .map((s) => s.trim())
     .filter((s) => s.length >= 3)
     .slice(0, 21) // RN-03: max 21 tasks per week
+}
+
+/**
+ * Legacy task parser kept for compatibility with older task creation paths.
+ */
+export const parseTasksFromText = (
+  rawText: string,
+  weekId: string,
+): Task[] => {
+  return parseTaskTitles(rawText)
     .map((title, idx) => ({
       id:          uuidv4(),
       weekId,

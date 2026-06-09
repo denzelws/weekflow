@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
-import type { AppState, AppScreen, Task, DaySession } from "@/types";
+import type { AppState, AppScreen, Task, DaySession, Obligation } from "@/types";
 import {
   today,
   now,
-  parseTasksFromText,
+  parseTaskTitles,
   createWeek,
   createDaySession,
   createProfile,
@@ -109,6 +109,7 @@ const normalizeState = (state: AppState): AppState => {
 };
 
 const resolveScreen = (state: AppState): AppScreen => {
+  if (state.screen === "obligations") return "obligations";
   if (!state.currentWeek) return "brain-dump";
 
   const selectedCount = state.todaySession?.selectedTasks.length ?? 0;
@@ -146,18 +147,66 @@ export function useAppStore() {
     storage.saveState(state);
   }, [state]);
 
-  const buildWeek = useCallback((rawText: string) => {
-    const week = createWeek();
-    const tasks = parseTasksFromText(rawText, week.id);
-    const updatedWeek = { ...week, totalTasks: tasks.length };
-
-    setState((s) => ({
-      ...s,
-      screen: "week-kickoff",
-      currentWeek: updatedWeek,
-      tasks,
-    }));
+  const navigateTo = useCallback((screen: AppScreen) => {
+    setState((s) => normalizeState({ ...s, screen }));
   }, []);
+
+  const buildWeekFromDraft = useCallback(
+    (titles: string[], selectedIndexes: number[]) => {
+      const cleanTitles = titles.map((title) => title.trim()).filter(Boolean);
+      if (cleanTitles.length === 0) return;
+
+      const selectedIndexSet = new Set(
+        selectedIndexes.filter(
+          (index) => index >= 0 && index < cleanTitles.length,
+        ),
+      );
+      const week = selectedIndexSet.size > 0 ? createWeek() : null;
+      const obligations: Obligation[] = cleanTitles.map((title, index) => {
+        const obligation = createObligation(title);
+
+        return selectedIndexSet.has(index)
+          ? {
+              ...obligation,
+              status: "scheduled" as const,
+              updatedAt: obligation.createdAt,
+            }
+          : obligation;
+      });
+      const tasks = week
+        ? obligations
+            .map((obligation, index) =>
+              selectedIndexSet.has(index)
+                ? createTaskFromObligation(week.id, obligation, index)
+                : null,
+            )
+            .filter((task): task is Task => task !== null)
+            .map((task, order) => ({ ...task, order }))
+        : [];
+      const updatedWeek = week ? { ...week, totalTasks: tasks.length } : null;
+
+      setState((s) =>
+        normalizeState({
+          ...s,
+          screen: updatedWeek ? "week-kickoff" : "brain-dump",
+          currentWeek: updatedWeek,
+          tasks,
+          obligations: [...s.obligations, ...obligations],
+          todaySession: null,
+          activeFocusIdx: 0,
+        }),
+      );
+    },
+    [],
+  );
+
+  const buildWeek = useCallback((rawText: string) => {
+    const titles = parseTaskTitles(rawText);
+    buildWeekFromDraft(
+      titles,
+      titles.map((_, index) => index),
+    );
+  }, [buildWeekFromDraft]);
 
   const startWeek = useCallback(() => {
     setState((s) => ({ ...s, screen: "backlog" }));
@@ -510,7 +559,9 @@ export function useAppStore() {
   return {
     state,
     // Actions
+    navigateTo,
     buildWeek,
+    buildWeekFromDraft,
     startWeek,
     toggleTodayTask,
     startFocus,
